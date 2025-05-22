@@ -1,3 +1,26 @@
+# CO2NEX: Real-Time Carbon Credit Certification at Planetary Scale
+
+[![License](https://img.shields.io/badge/license-CC%20BY%204.0-blue)](LICENSE.md)
+[![Built with AI](https://img.shields.io/badge/AI-Verified-blue)](#)
+[![Status](https://img.shields.io/badge/status-Active-brightgreen)](#)
+[![Climate](https://img.shields.io/badge/topic-Climate-lightgrey)](#)
+[![Carbon Credits](https://img.shields.io/badge/topic-Carbon--Credits-lightgrey)](#)
+[![Blockchain](https://img.shields.io/badge/topic-Blockchain-lightgrey)](#)
+[![MRV](https://img.shields.io/badge/topic-MRV-lightgrey)](#)
+[![Whitepaper](https://img.shields.io/badge/type-Whitepaper-yellow)](#)
+
+---
+
+## 📦 Release Info
+
+![Latest Release](https://img.shields.io/github/v/release/co2nex/co2nex-platform?include_prereleases)
+
+**Tag:** `v1.0.0-alpha`  
+**Status:** ⛔ Not production ready (Alpha)  
+**Changelog:** [View Release Notes](https://github.com/co2nex/co2nex-platform/releases/tag/v1.0.0-alpha)
+
+> 🚀 This is the first public milestone of CO2NEX. APIs, SDKs, and infrastructure are under active development.
+
 # 🌍 CO2NEX Platform
 
 > MVP under development — this repo will document the platform’s evolution and tech decisions as they happen.
