@@ -1,4 +1,4 @@
-# CO2NEX: Real-Time Carbon Credit Certification at Planetary Scale
+# CO2NEX: Real-Time Carbon Credit Verification at Planetary Scale Platform
 
 [![License](https://img.shields.io/badge/license-CC%20BY%204.0-blue)](LICENSE.md)
 [![Built with AI](https://img.shields.io/badge/AI-Verified-blue)](#)
