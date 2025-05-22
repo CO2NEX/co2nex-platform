@@ -1,4 +1,4 @@
-# CO2NEX: Real-Time Carbon Credit Verification at Planetary Scale Platform
+# ⚙️ CO2NEX Platform: Real-Time Carbon Credit Verification at Planetary Scale
 
 [![License](https://img.shields.io/badge/license-CC%20BY%204.0-blue)](LICENSE.md)
 [![Built with AI](https://img.shields.io/badge/AI-Verified-blue)](#)
@@ -7,7 +7,7 @@
 [![Carbon Credits](https://img.shields.io/badge/topic-Carbon--Credits-lightgrey)](#)
 [![Blockchain](https://img.shields.io/badge/topic-Blockchain-lightgrey)](#)
 [![MRV](https://img.shields.io/badge/topic-MRV-lightgrey)](#)
-[![Whitepaper](https://img.shields.io/badge/type-Whitepaper-yellow)](#)
+[![Platform](https://img.shields.io/badge/type-Platform-blue)](#)
 
 ---
 
@@ -19,15 +19,14 @@
 **Status:** ⛔ Not production ready (Alpha)  
 **Changelog:** [View Release Notes](https://github.com/co2nex/co2nex-platform/releases/tag/v1.0.0-alpha)
 
-> 🚀 This is the first public milestone of CO2NEX. APIs, SDKs, and infrastructure are under active development.
+> 🚀 This is the first public milestone of the **CO2NEX Platform**. APIs, SDKs, and decentralized infrastructure are under active development.  
+> Follow the evolution of our MVP and the critical tech decisions behind the world’s first **real-time carbon certification system**.
 
-# 🌍 CO2NEX Platform
+---
 
-> MVP under development — this repo will document the platform’s evolution and tech decisions as they happen.
+## 🌍 Overview
 
-## 🔧 Overview
-
-This repository serves as the **development ground for the CO2NEX MVP platform and dashboard** — the core interface for real-time carbon credit verification, certification, and trading.
+**CO2NEX** is a decentralized platform for real-time carbon credit **verification**, **certification**, and **offset**—leveraging satellite intelligence, blockchain, AI, and a global network of human validators. This repo houses the core logic and infrastructure powering the platform.
 
 CO2NEX is on a mission to make carbon markets **transparent, fast, and verifiable at planetary scale**, powered by AI, satellite data, blockchain, and human intelligence.
 
