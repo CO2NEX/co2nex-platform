@@ -1,0 +1,28 @@
+# macOS
+.DS_Store
+
+# Node
+node_modules/
+
+# Logs
+*.log
+
+# System
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Env files
+.env
+.env.local
+
+# IDEs
+.vscode/
+.idea/
+
+# Google Earth Engine temp
+*.tmp
