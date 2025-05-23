@@ -1,3 +1,8 @@
+---
+title: Mato Grosso Alpha Dashboard
+layout: default
+---
+
 # 🌍 CO2NEX | Mato Grosso Environmental Dashboard  
 **Version: V1.0.0 Alpha**  
 
