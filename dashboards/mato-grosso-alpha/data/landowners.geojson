@@ -1,0 +1,45 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "landowner": "João Silva",
+        "property_id": "MT001",
+        "area_ha": 112.5
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-56.095, -12.753],
+            [-56.091, -12.753],
+            [-56.091, -12.750],
+            [-56.095, -12.750],
+            [-56.095, -12.753]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "landowner": "Maria Souza",
+        "property_id": "MT002",
+        "area_ha": 84.2
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-56.080, -12.760],
+            [-56.076, -12.760],
+            [-56.076, -12.757],
+            [-56.080, -12.757],
+            [-56.080, -12.760]
+          ]
+        ]
+      }
+    }
+  ]
+}
