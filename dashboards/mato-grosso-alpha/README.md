@@ -79,7 +79,7 @@ This dashboard runs in [Google Earth Engine](https://earthengine.google.com/).
 ---
 
 ## 📁 Folder Structure
-.
+
 ├── README.md               # This documentation
 ├── index.js                # Earth Engine Script
 ├── LICENSE                 # MIT License
