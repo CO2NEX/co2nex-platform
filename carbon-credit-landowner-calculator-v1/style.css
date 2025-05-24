@@ -1,0 +1,31 @@
+/* Force white text on header */
+.co2nex-calculator-container .text-white {
+    color: white !important;
+}
+
+/* Custom animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-in {
+    animation: fadeIn 0.6s ease-out forwards;
+}
+
+/* Additional custom styles */
+.co2nex-input-highlight {
+    transition: all 0.3s ease;
+}
+
+.co2nex-input-highlight:focus {
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    .co2nex-calculator-container {
+        padding: 1rem;
+    }
+}
