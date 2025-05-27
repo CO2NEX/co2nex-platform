@@ -1,6 +1,52 @@
-// ------------------------------------------------------------------
-// 🌍 Mato Grosso Environmental Dashboard (VIIRS + Earth Engine)
-// ------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// 🌍 Mato Grosso Environmental Dashboard - Version 1.0.0 (Alpha)
+// -----------------------------------------------------------------------------
+
+// 📅 Release Date: 2025-05-22
+// 👤 Created by: Nina Carrera Saporito + ChatGPT (OpenAI)
+// 📍 Region: Mato Grosso, Brazil (State boundary from FAO GAUL level 1)
+// 🛰️ Satellites Used:
+//    - VIIRS VNP13A1 NDVI (2022)
+//    - NASA SMAP10KM Soil Moisture (2022)
+//    - JRC Global Surface Water (Occurrence, 1984–2020)
+//    - ISRIC SoilGrids SOC and BD (0–100cm)
+//    - Hansen Global Forest Change (UMD, Tree Cover + Forest Loss)
+// 
+// 🔍 Purpose:
+//    A lightweight but rich environmental monitoring dashboard for 
+//    carbon, vegetation, moisture, water, and deforestation risk in Mato Grosso.
+// 
+// 📦 Layers Included:
+//    1. 🌿 VIIRS NDVI (2022) - Vegetation greenness
+//    2. 💧 SMAP Soil Moisture (2022) - Surface soil saturation
+//    3. 🌊 Water Occurrence (1984–2020) - Historic water dynamics
+//    4. 🌱 Soil Organic Carbon (0–100cm) - Multi-depth carbon content
+//    5. ♻️ CO₂ Sequestered Proxy (NDVI-driven) - Biomass carbon uptake
+//    6. 🪓 CO₂ Emission Risk (Tree Cover Loss Proxy)
+// 
+// 📈 Resolution Notes:
+//    - VIIRS: 500m
+//    - SMAP: 10km
+//    - JRC Water: 30m
+//    - SoilGrids: 250m
+//    - Hansen: 30m
+// 
+// 📘 Version Notes (v1.0.0 Alpha):
+//    - Static map layers
+//    - Region: State of Mato Grosso only
+//    - No UI panel yet (future: App format)
+//    - SMAP color map adjusted for contrast, pixelation noted
+//
+// 🔜 Planned Features for v1.1+:
+//    - Time sliders for NDVI/Soil Moisture
+//    - Sentinel & Landsat comparisons
+//    - Fire & drought risk layers
+//    - Export tools (GeoTIFFs, charts)
+//    - GEE App with UI Panel, filtering, and interactivity
+//
+// -----------------------------------------------------------------------------
+// 🌱 Protect the Forest. Quantify the Carbon. Understand the Soil.
+// -----------------------------------------------------------------------------
 
 // Define Mato Grosso boundary using FAO GAUL
 var states = ee.FeatureCollection('FAO/GAUL/2015/level1');
@@ -41,30 +87,37 @@ ndviStats.evaluate(function(p) {
 });
 
 // --------------------------------------------------
-// 💧 2. Soil Moisture from SMAP
+// 💧 2. Soil Moisture from SMAP (Dynamic Visualization)
 // --------------------------------------------------
 var smap = ee.ImageCollection('NASA_USDA/HSL/SMAP10KM_soil_moisture')
   .filterDate('2022-01-01', '2022-12-31')
   .filterBounds(matoGrosso)
   .select('ssm');
 
+// Compute mean soil moisture for 2022
 var meanSM = smap.mean().clip(matoGrosso);
 
-var smVis = {
-  min: 0.05,
-  max: 0.4,
-  palette: ['#ffffcc','#c2e699','#78c679','#31a354','#006837']
-};
+// Optional: Smooth it out a bit (like NDVI)
+var meanSM_smoothed = meanSM.focal_mean({radius: 1, units: 'pixels'});
 
-Map.addLayer(meanSM, smVis, '💧 Soil Moisture (SMAP 2022)');
-
-var smStats = meanSM.reduceRegion({
-  reducer: ee.Reducer.mean().combine('min', null, true).combine('max', null, true),
+// Compute dynamic stats for better visualization
+var smStats = meanSM_smoothed.reduceRegion({
+  reducer: ee.Reducer.percentile([5, 95]),
   geometry: matoGrosso.geometry(),
   scale: 5000,
   maxPixels: 1e9
 });
-print('📊 Soil Moisture Stats (SMAP 2022)', smStats);
+
+// Visualize using real percentiles
+smStats.evaluate(function(p) {
+  var vis = {
+    min: p.ssm_p5,
+    max: p.ssm_p95,
+    palette: ['#ffffcc','#c2e699','#78c679','#31a354','#006837']
+  };
+  Map.addLayer(meanSM_smoothed, vis, '💧 Soil Moisture (SMAP 2022)');
+  print('📊 Soil Moisture Stats (SMAP 2022)', p);
+});
 
 // --------------------------------------------------
 // 🌊 3. Surface Water Occurrence (1984–2020)
