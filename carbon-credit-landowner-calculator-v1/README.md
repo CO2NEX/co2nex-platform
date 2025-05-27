@@ -18,7 +18,7 @@
 
 ---
 
-## 🌍
+## 🌍 What is the CO2NEX Carbon Harvest Calculator?
 ---
 
 ## 🚀 What Is It?
