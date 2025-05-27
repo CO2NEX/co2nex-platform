@@ -1,0 +1,91 @@
+/**
+ * AJAX Form Submission Handler
+ */
+
+class FormHandler {
+    constructor() {
+        this.form = document.getElementById('co2nex-form');
+        if (this.form) {
+            this.init();
+        }
+    }
+
+    init() {
+        this.form.addEventListener('submit', (e) => this.handleSubmit(e));
+    }
+
+    handleSubmit(e) {
+        e.preventDefault();
+        const submitButton = this.form.querySelector('button[type="submit"]');
+        const originalButtonText = submitButton.innerHTML;
+        
+        // Show loading state
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Processing...';
+        
+        // Prepare form data
+        const formData = new FormData(this.form);
+        formData.append('action', 'co2nex_submit_form');
+        formData.append('security', co2nex_vars.nonce);
+        
+        // Send AJAX request
+        fetch(co2nex_vars.ajaxurl, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => this.handleResponse(data))
+        .catch(error => this.handleError(error))
+        .finally(() => {
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalButtonText;
+        });
+    }
+
+    handleResponse(data) {
+        const messageContainer = document.getElementById('form-message-container');
+        messageContainer.innerHTML = '';
+        
+        if (data.success) {
+            messageContainer.innerHTML = this.createMessageElement(data.data.message, 'success');
+            this.form.reset();
+        } else {
+            messageContainer.innerHTML = this.createMessageElement(data.data.message, 'error');
+        }
+    }
+
+    handleError(error) {
+        console.error('Form submission error:', error);
+        const messageContainer = document.getElementById('form-message-container');
+        messageContainer.innerHTML = this.createMessageElement(
+            'There was an error submitting your form. Please try again.', 
+            'error'
+        );
+    }
+
+    createMessageElement(message, type) {
+        const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+        const color = type === 'success' ? 'emerald' : 'red';
+        
+        return `
+            <div class="bg-${color}-50 border-l-4 border-${color}-500 p-4 mb-6 animate-in">
+                <div class="flex">
+                    <div class="flex-shrink-0 text-${color}-500 mt-1 mr-4">
+                        <i class="fas ${icon} text-2xl"></i>
+                    </div>
+                    <div class="text-${color}-800">
+                        ${message}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Initialize form handler when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    new FormHandler();
+});
