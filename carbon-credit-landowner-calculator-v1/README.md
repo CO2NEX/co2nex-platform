@@ -1,15 +1,24 @@
 ![CO2NEX Logo](https://co2nex.org/wp-content/uploads/2025/05/CO2NEX-Real-Time-Carbon-Credit-Verification-Economy.webp)
 
-# 🌍 CO2NEX Carbon Harvest Calculator  
-**The World's Most Transparent, Science-Driven Carbon Credit Estimator for Landowners**
+# CO2NEX Carbon Harvest Calculator
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Build Status](https://img.shields.io/github/workflow/status/co2nex/core/CI)]()
-[![Real-Time Engine](https://img.shields.io/badge/Verified-Real--Time-44cc88)]()
+[![Build Status](https://img.shields.io/github/actions/workflow/status/co2nex/core/CI.yml?branch=main)](https://github.com/co2nex/core/actions)
+[![Verified: Real-Time](https://img.shields.io/badge/Verified-Real--Time-44cc88)]()
 [![Open Science](https://img.shields.io/badge/Methodology-Open--Source-blueviolet)]()
 [![Landowner Friendly](https://img.shields.io/badge/Built%20for-Landowners-yellowgreen)]()
-[![CO2 Accuracy](https://img.shields.io/badge/Carbon%20Data-Scientific%20Accuracy-lightgrey)]()
+[![CO₂ Accuracy](https://img.shields.io/badge/Carbon%20Data-Scientific%20Accuracy-lightgrey)]()
+[![Version](https://img.shields.io/badge/version-v1.0.0--alpha-orange)]()
+[![Status](https://img.shields.io/badge/status-prototype-lightgrey)]()
+[![Styled with Tailwind CSS](https://img.shields.io/badge/styled%20with-tailwindcss-38b2ac)]()
+[![Verified by CO2NEX](https://img.shields.io/badge/verifiable-CO2NEX-blue)]()
 
+> **Prototype Notice:**  
+> This is the **Alpha version (v1.0.0)** of the CO2NEX Carbon Harvest Calculator. The layout is active and reflects the planned design and methodology, but **not all backend functions (e.g., form submission, dynamic calculations)** are currently functional. This is a visual and conceptual preview of what’s to come.
+
+---
+
+## 🌍
 ---
 
 ## 🚀 What Is It?
