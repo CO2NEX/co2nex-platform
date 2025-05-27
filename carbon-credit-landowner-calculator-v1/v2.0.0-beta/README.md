@@ -173,8 +173,7 @@ Copyright 2023 CO2NEX
 
 [Website](https://co2nex.org) | 
 [Demo](https://co2nex.org/calculator) | 
-[Twitter](https://twitter.com/CO2NEX) | 
-[LinkedIn](https://linkedin.com/company/co2nex)
+[Twitter](https://twitter.com/CO2NEX) |
 
 *"Building verifiable climate solutions through open science."*
 
