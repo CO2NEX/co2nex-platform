@@ -3,7 +3,7 @@
 // -----------------------------------------------------------------------------
 
 // 📅 Release Date: 2025-05-22
-// 👤 Created by: Nina Carrera Saporito + ChatGPT (OpenAI)
+// 👤 Created by: CO2NEX + ChatGPT (OpenAI)
 // 📍 Region: Mato Grosso, Brazil (State boundary from FAO GAUL level 1)
 // 🛰️ Satellites Used:
 //    - VIIRS VNP13A1 NDVI (2022)
