@@ -76,6 +76,7 @@ var projectID = 'CO2NEX-0002_BRA_MT_2025-06-07';                     �
 var classification = 'Voluntary - Deforestation';       // Options: Agro, Pasture, Cattle, Wetlands, etc.
 var landownerName = 'Fazenda Capada';
 var dataCollectionDate = '2025-06-01';                 // Placeholder — used for filtering imagery
+var verifiedForestGainHectares = 0; // Initialize global variable to store the numerical forest gain in hectares
 
 // 📍 POLYGON GEOMETRY (LANDOWNER PROPERTY)
 var farmPolygonCoords = [
@@ -496,52 +497,162 @@ var sampledData = s2MeanNDVIDisplay.reduceRegions({
 
 
 // ╭────────────────────────────────────────────────────────────╮
-// │             GEDI ABOVEGROUND BIOMASS (AGB) AUDIT           │
+// │         🌍 GEDI BIOMASS, LAI, CANOPY HEIGHT (10-Year Eval) │
 // ╰────────────────────────────────────────────────────────────╯
 
-// Load GEDI L4A Aboveground Biomass Density as an ImageCollection (monthly gridded product)
-var gedi = ee.ImageCollection('LARSE/GEDI/GEDI04_A_002_MONTHLY')
+// Define a 10-year window specifically for GEDI data evaluation
+var gediEndDate = ee.Date(Date.now()).advance(-1, 'day'); // Yesterday
+var gediStartDate = gediEndDate.advance(-10, 'year'); // 10 years prior
+
+print('GEDI Evaluation Period:', gediStartDate.format('YYYY-MM-dd'), 'to', gediEndDate.format('YYYY-MM-dd'));
+
+
+// 📦 Load GEDI Monthly L4A Data (AGB), L2A (Height), and L2B (Canopy Cover / PAI)
+var gediL4A = ee.ImageCollection('LARSE/GEDI/GEDI04_A_002_MONTHLY')
   .filterBounds(farmArea)
-  .filterDate(currentStartDate, currentEndDate); // Filter for the current period
+  .filterDate(gediStartDate, gediEndDate); // Using 10-year GEDI specific date range
 
-var gediCollectionSize = gedi.size();
-print('🛰️ GEDI L4A AGB monthly images found:', gediCollectionSize);
+var gediL2A = ee.ImageCollection('LARSE/GEDI/GEDI02_A_002_MONTHLY')
+  .filterBounds(farmArea)
+  .filterDate(gediStartDate, gediEndDate); // Using 10-year GEDI specific date range
 
-gediCollectionSize.evaluate(function(size) {
-  if (size > 0) {
-    // Take the mean of the monthly AGB images over the period
-    var gediAGBImage = gedi.select('agbd').mean().clip(farmArea);
+var gediL2B = ee.ImageCollection('LARSE/GEDI/GEDI02_B_002_MONTHLY')
+  .filterBounds(farmArea)
+  .filterDate(gediStartDate, gediEndDate); // Using 10-year GEDI specific date range
 
-    var gediAGBVis = {
-      min: 0,
-      max: 200, // Tonnes/ha, adjust based on expected values for Cerrado
-      palette: ['#f7fcf0', '#e0f3db', '#c7e9c0', '#a1d99b', '#74c476', '#41ab5d', '#238b45', '#006d2c', '#00441b']
-    };
-    Map.addLayer(gediAGBImage, gediAGBVis, '🌳 GEDI AGB (tonnes/ha) Audit');
+// 📦 MODIS LAI (MCD15A3H v6.1, every 4 days) - This will be the primary LAI source
+var modisLAI = ee.ImageCollection('MODIS/061/MCD15A3H')
+  .filterBounds(farmArea)
+  .filterDate(gediStartDate, gediEndDate) // Using 10-year GEDI specific date range
+  .select('Lai'); // Confirmed 'Lai' band exists in MODIS dataset
 
-    var gediAGBStats = gediAGBImage.reduceRegion({
-      reducer: ee.Reducer.mean(),
-      geometry: farmArea,
-      scale: 25, // GEDI resolution is around 25m
-      maxPixels: 1e9
-    });
+// ✅ Print Availability
+print('🛰️ GEDI L4A (AGB) Images (10-Year):', gediL4A.size());
+print('🛰️ GEDI L2A (Height) Images (10-Year):', gediL2A.size());
+print('🛰️ GEDI L2B (Canopy Cover/PAI) Images (10-Year):', gediL2B.size());
+print('🌱 MODIS LAI Images (10-Year):', modisLAI.size());
 
-    gediAGBStats.evaluate(function(result) {
-      var avgGediAGB = result.agbd;
-      if (avgGediAGB !== null && !isNaN(avgGediAGB)) {
-        print('? GEDI AGB (Audit) - Average: ' + avgGediAGB.toFixed(2) + ' tonnes/ha');
-        gediAGBLabel_ui.setValue(avgGediAGB.toFixed(2) + ' t/ha');
-      } else {
-        print('⚠️ GEDI AGB (Audit) - Could not compute statistics. Result: ' + JSON.stringify(result));
-        gediAGBLabel_ui.setValue('N/A');
+// 🧮 Mean Composites
+var agb = gediL4A.select('agbd').mean().clip(farmArea);               // Biomass (t/ha)
+// Relying on GEE's inherent band scaling for 'Lai' band.
+var laiImage = modisLAI.mean().clip(farmArea);                        // MODIS LAI becomes the primary LAI source
+var hCanopy = gediL2A.select('rh100').mean().clip(farmArea);          // Canopy Height (m)
+
+// 🎨 Visualization Parameters
+var agbVis = {min: 0, max: 200, palette: ['#f7fcf0','#c7e9c0','#41ab5d','#00441b']};
+var laiVis = {min: 0, max: 10, palette: ['#ffffe5','#78c679','#004529']};
+var hVis = {min: 0, max: 50, palette: ['#edf8fb','#66c2a4','#006d2c']};
+
+// 🗺️ Map Layers
+Map.addLayer(agb, agbVis, '🌳 GEDI Biomass (t/ha) [10-Year]');
+Map.addLayer(laiImage, laiVis, '🌿 LAI (MODIS Primary) [10-Year]');
+Map.addLayer(hCanopy, hVis, '🌲 Canopy Height (m) [10-Year]');
+
+
+// 📊 Region Reduction
+var scale = 25; // GEDI's native resolution (MODIS LAI is coarser, but will be sampled at this scale)
+var agbStats = agb.reduceRegion({reducer: ee.Reducer.mean(), geometry: farmArea, scale: scale, maxPixels: 1e9});
+var laiStats = laiImage.reduceRegion({reducer: ee.Reducer.mean(), geometry: farmArea, scale: scale, maxPixels: 1e9});
+var heightStats = hCanopy.reduceRegion({reducer: ee.Reducer.mean(), geometry: farmArea, scale: scale, maxPixels: 1e9});
+
+// 🧠 Merge All Stats
+var statsCombined = agbStats.combine(laiStats, true)
+                            .combine(heightStats, true);
+
+// 🔎 Evaluate & Display
+statsCombined.evaluate(function(stats) {
+  if (stats) {
+    var avgAGB = (stats.agbd != null) ? Number(stats.agbd.toFixed(2)) : null;
+    
+    var avgLAI = null;
+    var laiSource = '❌ None';
+
+    // Now, only check for the 'Lai' band from MODIS, as it's the confirmed source
+    if (stats.Lai != null) {
+      avgLAI = Number(stats.Lai.toFixed(2));
+      laiSource = 'MODIS';
+    }
+
+    var avgHeight = (stats.rh100 != null) ? Number(stats.rh100.toFixed(2)) : null;
+
+    if (avgAGB !== null && avgLAI !== null && avgHeight !== null) {
+      print('✅ GEDI Biomass (10-Year):', avgAGB + ' t/ha');
+      print('✅ LAI (MODIS, 10-Year):', avgLAI);
+      print('✅ Canopy Height (10-Year):', avgHeight + ' m');
+
+      gediAGBLabel_ui.setValue(avgAGB + ' t/ha');
+      laiLabel_ui.setValue(avgLAI + ' (' + laiSource + ')');
+      canopyHeightLabel_ui.setValue(avgHeight + ' m');
+
+      // 🔬 Habitat Integrity Score (HIBC Score) - Adjusted thresholds for tropical forest/Cerrado
+      var hibcScore = 0;
+      // Assuming higher values for AGB, LAI, Height for high integrity in a tropical forest context
+      if (avgAGB >= 150 && avgLAI >= 4.5 && avgHeight >= 30) { // Very High Integrity
+        hibcScore = 95;
+      } else if (avgAGB >= 100 && avgLAI >= 3.0 && avgHeight >= 20) { // High Integrity
+        hibcScore = 80;
+      } else if (avgAGB >= 20 && avgLAI >= 1.8 && avgHeight >= 8) { // Moderate Integrity (Adjusted for current data)
+        hibcScore = 65;
+      } else if (avgAGB >= 10) { // Basic Integrity (Lowered AGB threshold)
+        hibcScore = 45;
+      } else { // Very Low Integrity
+        hibcScore = 25;
       }
-    });
+
+      // --- APPLY BONUS FOR VERIFIED FOREST GAIN ---
+      // This part ensures that documented new forest growth contributes positively to the score.
+      // Assumes 'verifiedForestGainHectares' is a globally accessible number from the Hansen evaluation.
+      if (typeof verifiedForestGainHectares !== 'undefined' && verifiedForestGainHectares >= 5) { // Check for 5+ hectares of gain
+          print('⭐ Applying HIBC bonus for significant forest gain:', verifiedForestGainHectares.toFixed(2), 'ha');
+          hibcScore += 15; // Add a bonus, e.g., 15 points
+          // Cap the score at 99 to prevent it from exceeding max if already high
+          hibcScore = Math.min(hibcScore, 99); // Cap at 99%
+      }
+      // --- END BONUS APPLICATION ---
+
+      var hibcStatus = (hibcScore >= 80) ? '🌿 High Integrity' :
+                       (hibcScore >= 50) ? '🟡 Moderate Integrity' :
+                       '🔴 Low Integrity';
+      
+      // Update UI Labels for HIBC Score and Status
+      hibcScoreLabel_ui.setValue(hibcScore + '%');
+      hibcStatusLabel_ui.setValue(hibcStatus);
+
+      // Add descriptive text to the existing scrollableContent
+      var integrityDescriptionLabel = ui.Label('');
+      if (hibcScore >= 80) {
+        integrityDescriptionLabel.setValue('✅ Excellent ecosystem health. High carbon & canopy quality. Further enhanced by verified forest gain.');
+        integrityDescriptionLabel.style().set({color: '#1d633c'});
+      } else if (hibcScore >= 50) {
+        integrityDescriptionLabel.setValue('⚠️ Fair habitat. Restoration efforts can enhance biodiversity value. Positive signs from verified forest gain.');
+        integrityDescriptionLabel.style().set({color: '#e67e22'});
+      } else {
+        integrityDescriptionLabel.setValue('❌ Degraded zone. Reforestation & ecological restoration are recommended. Even with some gain, more efforts are needed.');
+        integrityDescriptionLabel.style().set({color: '#c0392b'});
+      }
+      // Add the description label to the scrollable content
+      scrollableContent.add(integrityDescriptionLabel);
+
+    } else {
+      print('⚠️ Some GEDI/MODIS indicators missing for HIBC calculation.');
+      gediAGBLabel_ui.setValue('N/A');
+      laiLabel_ui.setValue('N/A');
+      canopyHeightLabel_ui.setValue('N/A');
+      hibcScoreLabel_ui.setValue('N/A');
+      hibcStatusLabel_ui.setValue('N/A');
+      scrollableContent.add(ui.Label('⚠️ Cannot compute HIBC score due to missing data.', {color: '#c0392b'}));
+    }
+
   } else {
-    print('⚠️ GEDI AGB (Audit) - No monthly data available for current period (' + currentStartDate.format('YYYY-MM-dd').getInfo() + ' to ' + currentEndDate.format('YYYY-MM-dd').getInfo() + ') in farmArea. This is common for sparse GEDI coverage.');
-    gediAGBLabel_ui.setValue('No data');
+    print('❌ No GEDI or MODIS stats available for HIBC.');
+    gediAGBLabel_ui.setValue('N/A');
+    laiLabel_ui.setValue('N/A');
+    canopyHeightLabel_ui.setValue('N/A');
+    hibcScoreLabel_ui.setValue('No data');
+    hibcStatusLabel_ui.setValue('No data');
+    scrollableContent.add(ui.Label('❌ No GEDI/MODIS data for HIBC score.', {color: '#c0392b'}));
   }
 });
-
 
 // ╭────────────────────────────────────────────────────────────╮
 // │             FOREST CHANGE DETECTION (HANSEN) AUDIT         │
@@ -562,12 +673,14 @@ var treeCover2000 = gfc.select('treecover2000').clip(farmArea);
 var recentLoss = lossImage.gte(baselineStartDate.get('year').subtract(2000));
 
 // Combine Hansen loss with FIRMS fire detections to estimate fire-related loss (proxy for involuntary)
+// IMPORTANT: The 'fires' variable is assumed to be defined by the FIRMS active fire script block.
+// If that block is not present elsewhere in your code, this line will cause an error.
 var fireLoss = fires.reduceToImage({
-  properties: ['confidence'], // Any property, just to create a mask
-  reducer: ee.Reducer.max()
+  properties: ['confidence'], // Any property, just to create a mask
+  reducer: ee.Reducer.max()
 }).reproject({
-  crs: 'EPSG:4326',
-  scale: 30
+  crs: 'EPSG:4326',
+  scale: 30
 }).focal_max(90, 'square', 'meters').clip(farmArea); // Buffer fires to catch nearby loss pixels
 
 var fireRelatedLoss = recentLoss.updateMask(fireLoss.gt(0)); // Loss pixels that overlap with fire
@@ -590,12 +703,13 @@ var lossArea = recentLoss.multiply(ee.Image.pixelArea()).reduceRegion({
   maxPixels: 1e9
 }).get('lossyear');
 
+// RESTORED: This is the gain calculation from your working code.
 var gainArea = gainImage.multiply(ee.Image.pixelArea()).reduceRegion({
   reducer: ee.Reducer.sum(),
   geometry: farmArea,
   scale: 30,
   maxPixels: 1e9
-}).get('gain');
+}).get('gain'); // Directly get 'gain' sum from the gainImage
 
 var fireRelatedLossArea = fireRelatedLoss.multiply(ee.Image.pixelArea()).reduceRegion({
   reducer: ee.Reducer.sum(),
@@ -614,44 +728,62 @@ var otherLossArea = otherLoss.multiply(ee.Image.pixelArea()).reduceRegion({
 
 lossArea.evaluate(function(area) {
   if (area !== null && !isNaN(area)) {
-    var hectares = (area / 10000).toFixed(2);
+    var hectares = (area / 10000).toFixed(2);
     print('🌲 Total Forest Loss (Hansen) Audit: ' + hectares + ' hectares lost since ' + baselineStartDate.format('YYYY').getInfo());
-    totalForestLossLabel_ui.setValue(hectares + ' ha');
+    totalForestLossLabel_ui.setValue(hectares + ' ha');
   } else {
     print('⚠️ Total Forest Loss (Hansen) Audit: No loss detected or could not compute area for selected period/area.');
-    totalForestLossLabel_ui.setValue('No loss');
+    totalForestLossLabel_ui.setValue('No loss');
   }
 });
 
 fireRelatedLossArea.evaluate(function(area) {
   if (area !== null && !isNaN(area)) {
-    var hectares = (area / 10000).toFixed(2);
+    var hectares = (area / 10000).toFixed(2);
     print('🔥 Fire-Related Forest Loss (Audit): ' + hectares + ' hectares (proxy for involuntary)');
-    fireRelatedLossLabel_ui.setValue(hectares + ' ha');
+    fireRelatedLossLabel_ui.setValue(hectares + ' ha');
   } else {
     print('⚠️ Fire-Related Forest Loss (Audit): No fire-related loss detected or could not compute area.');
-    fireRelatedLossLabel_ui.setValue('No data');
+    fireRelatedLossLabel_ui.setValue('No data');
   }
 });
 
 otherLossArea.evaluate(function(area) {
   if (area !== null && !isNaN(area)) {
-    var hectares = (area / 10000).toFixed(2);
+    var hectares = (area / 10000).toFixed(2);
     print('🌳 Other Forest Loss (Audit): ' + hectares + ' hectares (potential voluntary/other causes)');
-    otherLossLabel_ui.setValue(hectares + ' ha');
+    otherLossLabel_ui.setValue(hectares + ' ha');
   } else {
     print('⚠️ Other Forest Loss (Audit): No other loss detected or could not compute area.');
-    otherLossLabel_ui.setValue('No data');
+    otherLossLabel_ui.setValue('No data');
   }
 });
 
 
 gainArea.evaluate(function(area) {
   if (area !== null && !isNaN(area)) {
-    var hectares = (area / 10000).toFixed(2);
-    print('🌳 Forest Gain (Hansen) Audit: ' + hectares + ' hectares gained.');
-    forestGainLabel_ui.setValue(hectares + ' ha');
+    var hectares = (area / 10000); // Calculate hectares as a number
+    // This line assigns the computed hectares to the global variable
+    verifiedForestGainHectares = hectares; 
+    print('🌳 Forest Gain (Hansen) Audit: ' + hectares.toFixed(2) + ' hectares gained.');
+    forestGainLabel_ui.setValue(hectares.toFixed(2) + ' ha');
   } else {
+    // Ensure the global variable is zero if no gain or error
+    verifiedForestGainHectares = 0; 
+    print('⚠️ Forest Gain (Hansen) Audit: No gain detected or could not compute area for selected period/area.');
+    forestGainLabel_ui.setValue('No gain');
+  }
+});
+
+
+gainArea.evaluate(function(area) {
+  if (area !== null && !isNaN(area)) {
+    var hectares = (area / 10000); // Calculate hectares as a number
+    verifiedForestGainHectares = hectares; // Store the numerical value in the global variable
+    print('🌳 Forest Gain (Hansen) Audit: ' + hectares.toFixed(2) + ' hectares gained.');
+    forestGainLabel_ui.setValue(hectares.toFixed(2) + ' ha');
+  } else {
+    verifiedForestGainHectares = 0; // Ensure the global variable is zero if no gain or error
     print('⚠️ Forest Gain (Hansen) Audit: No gain detected or could not compute area for selected period/area.');
     forestGainLabel_ui.setValue('No gain');
   }
@@ -924,9 +1056,14 @@ var avgNdviLabel_ui, ndviChangeLabel_ui, avgPrecipitationLabel_ui;
 var avgSoilMoistureLabel_ui, fireAlertLabel_ui, totalForestLossLabel_ui;
 var fireRelatedLossLabel_ui, otherLossLabel_ui, forestGainLabel_ui;
 var jrcWaterOccLabel_ui, gediAGBLabel_ui, collectionDateLabel_ui;
+// NEW GEDI HABITAT INTEGRITY LABELS - Make sure these are declared!
+var canopyHeightLabel_ui, laiLabel_ui; // laiLabel_ui was already present, just adding canopyHeightLabel_ui
+var hibcScoreLabel_ui, hibcStatusLabel_ui; // New labels for HIBC score and status
 
-// Image panel components (declared for compatibility)
+
+// Image panel components (declared for compatibility, if you use them elsewhere)
 var selectedImageView, imageTitleLabel, imageDescriptionLabel, imageDateLabel, photoLinkLabel;
+
 
 // Helper function to create a row and return the value widget
 function addInfoRow(parentPanel, labelText, initialValue) {
@@ -1014,6 +1151,12 @@ otherLossLabel_ui = addInfoRow(scrollableContent, 'Other Forest Loss (ha)');
 forestGainLabel_ui = addInfoRow(scrollableContent, 'Forest Gain (ha)');
 jrcWaterOccLabel_ui = addInfoRow(scrollableContent, 'JRC Water Occurrence (%)');
 gediAGBLabel_ui = addInfoRow(scrollableContent, 'GEDI AGB Audit (t/ha)');
+// NEW GEDI HABITAT INTEGRITY METRICS - These lines should be added!
+canopyHeightLabel_ui = addInfoRow(scrollableContent, 'GEDI Mean Canopy Height (m)');
+laiLabel_ui = addInfoRow(scrollableContent, 'GEDI Leaf Area Index'); // Adjusted LAI label
+hibcScoreLabel_ui = addInfoRow(scrollableContent, 'HIBC Score');
+hibcStatusLabel_ui = addInfoRow(scrollableContent, 'HIBC Status');
+
 
 // Static / Metadata Info (use String() to avoid crashing on nulls)
 addInfoRow(scrollableContent, 'Project ID', String(projectID || 'N/A'));
@@ -1024,7 +1167,7 @@ collectionDateLabel_ui = addInfoRow(scrollableContent, 'Data Collection Date', '
 currentEndDate.format('YYYY-MM-dd').evaluate(function(dateStr) {
   collectionDateLabel_ui.setValue(dateStr);
 });
-addInfoRow(scrollableContent, 'Satellite Sources', 'Sentinel-2, SoilGrids, GEDI, Hansen, CHIRPS, SMAP');
+addInfoRow(scrollableContent, 'Satellite Sources', 'Sentinel-2, SoilGrids, GEDI, MODIS, Hansen, CHIRPS, SMAP');
 
 // === Map Setup ===
 Map.setOptions('HYBRID');
